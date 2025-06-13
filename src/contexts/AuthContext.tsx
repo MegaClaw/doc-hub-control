@@ -1,7 +1,22 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const AuthContext = createContext();
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  isLoading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -11,8 +26,8 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string) => {
     try {
       // Simulate API call - replace with actual authentication
       if (email === 'admin@dms.com' && password === 'admin123') {
@@ -55,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (name, email, password) => {
+  const signup = async (name: string, email: string, password: string) => {
     try {
       // Simulate API call - replace with actual registration
       const userData = {

@@ -1,15 +1,26 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Mail, Shield, Calendar, Edit2 } from 'lucide-react';
+import { User, Mail, Shield, Calendar, Edit2, Save, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: user?.name || 'John Doe',
+    email: user?.email || 'john.doe@company.com'
+  });
+
   const userInfo = {
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    role: 'Administrator',
+    name: user?.name || 'John Doe',
+    email: user?.email || 'john.doe@company.com',
+    role: user?.role || 'Administrator',
     joinDate: 'January 15, 2023',
     lastLogin: 'January 15, 2024 at 2:30 PM',
     documentsUploaded: 127,
@@ -17,14 +28,58 @@ const Profile = () => {
     storageLimit: '10 GB'
   };
 
+  const handleSaveProfile = () => {
+    // In a real app, you would make an API call here
+    toast({
+      title: "Profile updated",
+      description: "Your profile has been updated successfully",
+    });
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditForm({
+      name: userInfo.name,
+      email: userInfo.email
+    });
+    setIsEditing(false);
+  };
+
+  const handleChangePassword = () => {
+    toast({
+      title: "Change Password",
+      description: "Password change functionality would be implemented here",
+    });
+  };
+
+  const handleEnableTwoFactor = () => {
+    toast({
+      title: "Two-Factor Authentication",
+      description: "2FA setup would be implemented here",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-        <Button variant="outline">
-          <Edit2 className="w-4 h-4 mr-2" />
-          Edit Profile
-        </Button>
+        {!isEditing ? (
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Edit2 className="w-4 h-4 mr-2" />
+            Edit Profile
+          </Button>
+        ) : (
+          <div className="flex space-x-2">
+            <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save
+            </Button>
+            <Button variant="outline" onClick={handleCancelEdit}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -38,11 +93,28 @@ const Profile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" value={userInfo.name} readOnly />
+                  {isEditing ? (
+                    <Input 
+                      id="fullName" 
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    />
+                  ) : (
+                    <Input id="fullName" value={userInfo.name} readOnly />
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" value={userInfo.email} readOnly />
+                  {isEditing ? (
+                    <Input 
+                      id="email" 
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                    />
+                  ) : (
+                    <Input id="email" value={userInfo.email} readOnly />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -63,10 +135,10 @@ const Profile = () => {
               <CardTitle>Security Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleChangePassword}>
                 Change Password
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleEnableTwoFactor}>
                 Enable Two-Factor Authentication
               </Button>
               <div className="text-sm text-gray-600">

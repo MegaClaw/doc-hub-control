@@ -4,7 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { Login } from './Login';
 import { Signup } from './Signup';
 
-const AuthWrapper = ({ children }) => {
+interface AuthWrapperProps {
+  children: React.ReactNode;
+}
+
+const AuthWrapper = ({ children }: AuthWrapperProps) => {
   const { user, isLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
 
@@ -27,7 +31,7 @@ const AuthWrapper = ({ children }) => {
     );
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export { AuthWrapper };

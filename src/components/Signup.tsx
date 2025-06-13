@@ -8,7 +8,11 @@ import { FileText, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-const Signup = ({ onSwitchToLogin }) => {
+interface SignupProps {
+  onSwitchToLogin: () => void;
+}
+
+const Signup = ({ onSwitchToLogin }: SignupProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +22,7 @@ const Signup = ({ onSwitchToLogin }) => {
   const { signup } = useAuth();
   const { toast } = useToast();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {

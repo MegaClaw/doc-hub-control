@@ -19,6 +19,8 @@ const Categories = () => {
   ]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showCategoryDetails, setShowCategoryDetails] = useState(false);
   const { toast } = useToast();
 
   const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-yellow-500'];
@@ -58,6 +60,43 @@ const Categories = () => {
       description: "Category has been removed successfully",
     });
   };
+
+  const handleViewAll = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryDetails(true);
+    toast({
+      title: "Category Details",
+      description: `Viewing all documents in ${category.name}`,
+    });
+  };
+
+  if (showCategoryDetails && selectedCategory) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" onClick={() => setShowCategoryDetails(false)}>
+              ← Back to Categories
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedCategory.name} Documents</h1>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Documents in {selectedCategory.name} ({selectedCategory.documentCount})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">This category contains {selectedCategory.documentCount} documents</p>
+              <p className="text-sm text-gray-500 mt-2">{selectedCategory.description}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -133,7 +172,11 @@ const Categories = () => {
                   <FileText className="w-4 h-4" />
                   <span>{category.documentCount} documents</span>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleViewAll(category)}
+                >
                   View All
                 </Button>
               </div>
