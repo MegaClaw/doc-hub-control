@@ -3,46 +3,103 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { FolderOpen, Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const Categories = () => {
-  const [newCategory, setNewCategory] = useState('');
-
-  const categories = [
+  const [categories, setCategories] = useState([
     { id: 1, name: 'Finance', description: 'Financial documents and reports', documentCount: 45, color: 'bg-green-500' },
     { id: 2, name: 'HR', description: 'Human resources policies and procedures', documentCount: 23, color: 'bg-blue-500' },
     { id: 3, name: 'Legal', description: 'Legal contracts and agreements', documentCount: 18, color: 'bg-purple-500' },
     { id: 4, name: 'Projects', description: 'Project documentation and proposals', documentCount: 34, color: 'bg-orange-500' },
     { id: 5, name: 'Marketing', description: 'Marketing materials and campaigns', documentCount: 29, color: 'bg-pink-500' },
     { id: 6, name: 'Operations', description: 'Operational procedures and manuals', documentCount: 12, color: 'bg-indigo-500' },
-  ];
+  ]);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-yellow-500'];
+
+  const handleAddCategory = () => {
+    if (!newCategory.name.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a category name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const category = {
+      id: Date.now(),
+      name: newCategory.name,
+      description: newCategory.description,
+      documentCount: 0,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    };
+
+    setCategories([...categories, category]);
+    setNewCategory({ name: '', description: '' });
+    setIsDialogOpen(false);
+    
+    toast({
+      title: "Category added",
+      description: `${category.name} has been created successfully`,
+    });
+  };
+
+  const handleDeleteCategory = (categoryId) => {
+    setCategories(categories.filter(cat => cat.id !== categoryId));
+    toast({
+      title: "Category deleted",
+      description: "Category has been removed successfully",
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
-      </div>
-
-      {/* Add New Category */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Category</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <Input
-              placeholder="Category name..."
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              className="flex-1"
-            />
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="w-4 h-4 mr-2" />
               Add Category
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Category Name</Label>
+                <Input
+                  id="name"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  placeholder="Enter category name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                  placeholder="Enter category description"
+                />
+              </div>
+              <Button onClick={handleAddCategory} className="w-full bg-blue-600 hover:bg-blue-700">
+                Add Category
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,7 +114,12 @@ const Categories = () => {
                   <Button variant="ghost" size="sm">
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => handleDeleteCategory(category.id)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

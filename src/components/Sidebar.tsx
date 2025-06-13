@@ -11,8 +11,13 @@ import {
   Menu,
   ChevronLeft
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'documents', label: 'Documents', icon: FileText },
@@ -20,6 +25,14 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
     { id: 'categories', label: 'Categories', icon: FolderOpen },
     { id: 'profile', label: 'Profile', icon: User },
   ];
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out successfully",
+      description: "See you next time!",
+    });
+  };
 
   return (
     <div className={`fixed left-0 top-0 h-full bg-white shadow-lg transition-all duration-300 z-30 ${
@@ -43,8 +56,23 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
         </button>
       </div>
 
+      {/* User Info */}
+      {isOpen && user && (
+        <div className="p-4 border-b bg-gray-50">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">{user.name}</p>
+              <p className="text-sm text-gray-500">{user.role}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="mt-8">
+      <nav className="mt-4">
         {menuItems.map((item) => (
           <button
             key={item.id}
@@ -65,7 +93,10 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
           <Settings className="w-5 h-5 min-w-[20px]" />
           {isOpen && <span className="ml-3">Settings</span>}
         </button>
-        <button className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
+        >
           <LogOut className="w-5 h-5 min-w-[20px]" />
           {isOpen && <span className="ml-3">Logout</span>}
         </button>
