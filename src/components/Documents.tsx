@@ -18,7 +18,7 @@ interface DocumentType {
   uploader: string;
   file: File | null;
   fileUrl: string | null;
-  fileData?: string; // Add the fileData property as optional
+  fileData?: string;
 }
 
 const Documents = () => {
@@ -68,7 +68,7 @@ const Documents = () => {
 
   // Load documents from localStorage on component mount
   useEffect(() => {
-    const savedDocuments = localStorage.getItem('documents');
+    const savedDocuments = localStorage.getItem('app_documents');
     if (savedDocuments) {
       try {
         const parsedDocs: DocumentType[] = JSON.parse(savedDocuments);
@@ -89,7 +89,7 @@ const Documents = () => {
               ...doc,
               file: file,
               fileUrl: URL.createObjectURL(blob),
-              fileData: undefined // Remove base64 data after conversion
+              fileData: undefined
             };
           }
           return doc;
@@ -128,7 +128,7 @@ const Documents = () => {
           };
         })
       );
-      localStorage.setItem('documents', JSON.stringify(docsToSave));
+      localStorage.setItem('app_documents', JSON.stringify(docsToSave));
     };
     
     saveDocuments();
