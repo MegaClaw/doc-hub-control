@@ -1,11 +1,12 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Users, FolderOpen, Calendar, Settings, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [viewingDoc, setViewingDoc] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -37,7 +38,7 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-500">
-            Welcome back, Admin
+            Welcome back, {user?.name || 'User'}
           </div>
           <Button 
             variant="outline" 

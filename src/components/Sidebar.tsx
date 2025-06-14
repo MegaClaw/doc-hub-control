@@ -89,7 +89,12 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
 
       {/* Bottom Section */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-        <button className="w-full flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <button 
+          onClick={() => setCurrentPage('settings')}
+          className={`w-full flex items-center px-4 py-3 hover:bg-gray-100 rounded-lg transition-colors ${
+            currentPage === 'settings' ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+          }`}
+        >
           <Settings className="w-5 h-5 min-w-[20px]" />
           {isOpen && <span className="ml-3">Settings</span>}
         </button>

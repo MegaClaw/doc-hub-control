@@ -7,6 +7,18 @@ import { Users } from '../components/Users';
 import { Categories } from '../components/Categories';
 import { Profile } from '../components/Profile';
 
+const Settings = () => {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Application Settings</h2>
+        <p className="text-gray-600">Settings functionality will be implemented here.</p>
+      </div>
+    </div>
+  );
+};
+
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -23,6 +35,8 @@ const Index = () => {
         return <Categories />;
       case 'profile':
         return <Profile />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }
