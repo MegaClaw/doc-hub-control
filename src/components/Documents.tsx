@@ -12,10 +12,46 @@ import { useAuth } from '@/contexts/AuthContext';
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [documents, setDocuments] = useState([
-    { id: 1, name: 'Annual Report 2024.pdf', category: 'Finance', uploadDate: '2024-01-15', size: '2.4 MB', uploader: 'John Doe' },
-    { id: 2, name: 'HR Policy Update.docx', category: 'HR', uploadDate: '2024-01-14', size: '856 KB', uploader: 'Jane Smith' },
-    { id: 3, name: 'Project Proposal.pdf', category: 'Projects', uploadDate: '2024-01-13', size: '1.2 MB', uploader: 'Mike Johnson' },
-    { id: 4, name: 'Legal Contract.pdf', category: 'Legal', uploadDate: '2024-01-12', size: '945 KB', uploader: 'Sarah Wilson' },
+    { 
+      id: 1, 
+      name: 'Annual Report 2024.pdf', 
+      category: 'Finance', 
+      uploadDate: '2024-01-15', 
+      size: '2.4 MB', 
+      uploader: 'John Doe',
+      file: null as File | null,
+      fileUrl: null as string | null
+    },
+    { 
+      id: 2, 
+      name: 'HR Policy Update.docx', 
+      category: 'HR', 
+      uploadDate: '2024-01-14', 
+      size: '856 KB', 
+      uploader: 'Jane Smith',
+      file: null as File | null,
+      fileUrl: null as string | null
+    },
+    { 
+      id: 3, 
+      name: 'Project Proposal.pdf', 
+      category: 'Projects', 
+      uploadDate: '2024-01-13', 
+      size: '1.2 MB', 
+      uploader: 'Mike Johnson',
+      file: null as File | null,
+      fileUrl: null as string | null
+    },
+    { 
+      id: 4, 
+      name: 'Legal Contract.pdf', 
+      category: 'Legal', 
+      uploadDate: '2024-01-12', 
+      size: '945 KB', 
+      uploader: 'Sarah Wilson',
+      file: null as File | null,
+      fileUrl: null as string | null
+    },
   ]);
   const [comments, setComments] = useState({
     1: [
@@ -46,6 +82,9 @@ const Documents = () => {
 
     setIsUploading(true);
     
+    // Create a URL for the file so we can view it later
+    const fileUrl = URL.createObjectURL(file);
+    
     setTimeout(() => {
       const newDocument = {
         id: Date.now(),
@@ -53,7 +92,9 @@ const Documents = () => {
         category: 'General',
         uploadDate: new Date().toISOString().split('T')[0],
         size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        uploader: 'Current User'
+        uploader: user?.name || 'Current User',
+        file: file,
+        fileUrl: fileUrl
       };
       
       setDocuments([newDocument, ...documents]);
@@ -67,13 +108,37 @@ const Documents = () => {
   };
 
   const handleDownload = (doc) => {
-    toast({
-      title: "Download started",
-      description: `Downloading ${doc.name}`,
-    });
+    if (doc.file) {
+      // Create a download link for the actual file
+      const url = URL.createObjectURL(doc.file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${doc.name}`,
+      });
+    } else {
+      toast({
+        title: "Download unavailable",
+        description: "This file is not available for download",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDelete = (docId) => {
+    // Clean up file URLs to prevent memory leaks
+    const docToDelete = documents.find(doc => doc.id === docId);
+    if (docToDelete && docToDelete.fileUrl) {
+      URL.revokeObjectURL(docToDelete.fileUrl);
+    }
+    
     setDocuments(documents.filter(doc => doc.id !== docId));
     toast({
       title: "Document deleted",
@@ -83,10 +148,13 @@ const Documents = () => {
 
   const handleView = (doc) => {
     setViewingDoc(doc);
-    toast({
-      title: "Opening document",
-      description: `Viewing ${doc.name}`,
-    });
+    if (!doc.file) {
+      toast({
+        title: "File not available",
+        description: "This file cannot be previewed",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEdit = (doc) => {
@@ -148,6 +216,71 @@ const Documents = () => {
       title: "Comment deleted",
       description: "Comment has been removed",
     });
+  };
+
+  const renderFilePreview = (doc) => {
+    if (!doc.file || !doc.fileUrl) {
+      return (
+        <div className="bg-gray-100 p-8 rounded-lg text-center min-h-[400px] flex items-center justify-center">
+          <div>
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">File preview not available</p>
+            <p className="text-sm text-gray-500 mt-2">This file was not uploaded in the current session</p>
+          </div>
+        </div>
+      );
+    }
+
+    const fileType = doc.file.type;
+    
+    if (fileType === 'application/pdf') {
+      return (
+        <div className="w-full h-[600px] border rounded-lg overflow-hidden">
+          <iframe
+            src={doc.fileUrl}
+            className="w-full h-full"
+            title={`Preview of ${doc.name}`}
+          />
+        </div>
+      );
+    } else if (fileType.startsWith('image/')) {
+      return (
+        <div className="flex justify-center items-center min-h-[400px]">
+          <img
+            src={doc.fileUrl}
+            alt={doc.name}
+            className="max-w-full max-h-[600px] object-contain rounded-lg shadow-lg"
+          />
+        </div>
+      );
+    } else if (fileType.includes('text/') || fileType.includes('application/json')) {
+      return (
+        <div className="bg-gray-50 p-4 rounded-lg min-h-[400px]">
+          <p className="text-sm text-gray-600 mb-2">Text file preview:</p>
+          <div className="bg-white p-4 rounded border font-mono text-sm">
+            <p>File content preview would be available for text files</p>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="bg-gray-100 p-8 rounded-lg text-center min-h-[400px] flex items-center justify-center">
+          <div>
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Preview not available for this file type</p>
+            <p className="text-sm text-gray-500 mt-2">{fileType}</p>
+            <Button 
+              onClick={() => handleDownload(doc)} 
+              className="mt-4"
+              variant="outline"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download to view
+            </Button>
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -218,6 +351,8 @@ const Documents = () => {
                   <div>
                     <h3 className="font-medium text-gray-900">{doc.name}</h3>
                     <p className="text-sm text-gray-500">{doc.category} • {doc.size} • Uploaded by {doc.uploader}</p>
+                    {doc.file && <p className="text-xs text-green-600">✓ File available for preview</p>}
+                    {!doc.file && <p className="text-xs text-orange-600">⚠ File not available for preview</p>}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -318,24 +453,26 @@ const Documents = () => {
 
       {/* View Document Dialog */}
       <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Viewing: {viewingDoc?.name}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Viewing: {viewingDoc?.name}</span>
+              {viewingDoc?.file && (
+                <Button onClick={() => handleDownload(viewingDoc)} variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 rounded-lg">
               <div><strong>Category:</strong> {viewingDoc?.category}</div>
               <div><strong>Size:</strong> {viewingDoc?.size}</div>
               <div><strong>Upload Date:</strong> {viewingDoc?.uploadDate}</div>
               <div><strong>Uploader:</strong> {viewingDoc?.uploader}</div>
             </div>
-            <div className="bg-gray-100 p-8 rounded-lg text-center min-h-[400px] flex items-center justify-center">
-              <div>
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Document preview would appear here</p>
-                <p className="text-sm text-gray-500 mt-2">In a real application, this would show the document content</p>
-              </div>
-            </div>
+            {viewingDoc && renderFilePreview(viewingDoc)}
           </div>
         </DialogContent>
       </Dialog>
