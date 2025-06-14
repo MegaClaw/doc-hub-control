@@ -82,7 +82,7 @@ const Documents = () => {
 
     setIsUploading(true);
     
-    // Create a proper blob URL for PDF viewing
+    // Create a proper blob URL for file viewing
     const fileUrl = URL.createObjectURL(file);
     
     setTimeout(() => {
@@ -236,17 +236,49 @@ const Documents = () => {
     
     if (fileType === 'application/pdf') {
       return (
-        <div className="w-full min-h-[600px] border rounded-lg overflow-hidden bg-white">
-          <div className="p-4 bg-gray-50 border-b">
-            <h3 className="font-medium text-gray-900">PDF Preview: {doc.name}</h3>
-            <p className="text-sm text-gray-600">Use browser controls to zoom and navigate</p>
+        <div className="w-full space-y-4">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-medium text-blue-900 mb-2">PDF Preview: {doc.name}</h3>
+            <p className="text-sm text-blue-700 mb-3">Choose how to view your PDF:</p>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={() => window.open(doc.fileUrl, '_blank')} 
+                className="bg-blue-600 hover:bg-blue-700"
+                size="sm"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Open in New Tab
+              </Button>
+              <Button 
+                onClick={() => handleDownload(doc)} 
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
+            </div>
           </div>
-          <iframe
-            src={`${doc.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-            className="w-full h-[600px] border-0"
-            title={`Preview of ${doc.name}`}
-            style={{ minHeight: '600px' }}
-          />
+          
+          <div className="w-full border rounded-lg overflow-hidden bg-white" style={{ height: '600px' }}>
+            <iframe
+              src={doc.fileUrl}
+              className="w-full h-full border-0"
+              title={`Preview of ${doc.name}`}
+              style={{ 
+                minHeight: '600px',
+                width: '100%',
+                border: 'none'
+              }}
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            />
+          </div>
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              If the PDF doesn't display above, try opening it in a new tab or downloading it.
+            </p>
+          </div>
         </div>
       );
     } else if (fileType.startsWith('image/')) {
