@@ -9,9 +9,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface DocumentType {
+  id: number;
+  name: string;
+  category: string;
+  uploadDate: string;
+  size: string;
+  uploader: string;
+  file: File | null;
+  fileUrl: string | null;
+  fileData?: string; // Add the fileData property as optional
+}
+
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [documents, setDocuments] = useState([
+  const [documents, setDocuments] = useState<DocumentType[]>([
     { 
       id: 1, 
       name: 'Annual Report 2024.pdf', 
@@ -19,8 +31,8 @@ const Documents = () => {
       uploadDate: '2024-01-15', 
       size: '2.4 MB', 
       uploader: 'John Doe',
-      file: null as File | null,
-      fileUrl: null as string | null
+      file: null,
+      fileUrl: null
     },
     { 
       id: 2, 
@@ -29,8 +41,8 @@ const Documents = () => {
       uploadDate: '2024-01-14', 
       size: '856 KB', 
       uploader: 'Jane Smith',
-      file: null as File | null,
-      fileUrl: null as string | null
+      file: null,
+      fileUrl: null
     },
     { 
       id: 3, 
@@ -39,8 +51,8 @@ const Documents = () => {
       uploadDate: '2024-01-13', 
       size: '1.2 MB', 
       uploader: 'Mike Johnson',
-      file: null as File | null,
-      fileUrl: null as string | null
+      file: null,
+      fileUrl: null
     },
     { 
       id: 4, 
@@ -49,8 +61,8 @@ const Documents = () => {
       uploadDate: '2024-01-12', 
       size: '945 KB', 
       uploader: 'Sarah Wilson',
-      file: null as File | null,
-      fileUrl: null as string | null
+      file: null,
+      fileUrl: null
     },
   ]);
 
@@ -59,7 +71,7 @@ const Documents = () => {
     const savedDocuments = localStorage.getItem('documents');
     if (savedDocuments) {
       try {
-        const parsedDocs = JSON.parse(savedDocuments);
+        const parsedDocs: DocumentType[] = JSON.parse(savedDocuments);
         // Recreate blob URLs for uploaded files
         const docsWithUrls = parsedDocs.map(doc => {
           if (doc.fileData) {
@@ -96,14 +108,14 @@ const Documents = () => {
         documents.map(async (doc) => {
           if (doc.file && !doc.fileData) {
             // Convert file to base64 for storage
-            return new Promise((resolve) => {
+            return new Promise<DocumentType>((resolve) => {
               const reader = new FileReader();
               reader.onload = () => {
                 resolve({
                   ...doc,
                   file: null,
                   fileUrl: null,
-                  fileData: reader.result
+                  fileData: reader.result as string
                 });
               };
               reader.readAsDataURL(doc.file);
@@ -155,7 +167,7 @@ const Documents = () => {
     const fileUrl = URL.createObjectURL(file);
     
     setTimeout(() => {
-      const newDocument = {
+      const newDocument: DocumentType = {
         id: Date.now(),
         name: file.name,
         category: 'General',
