@@ -25,6 +25,15 @@ interface DocumentType {
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [documents, setDocuments] = useState<DocumentType[]>([]);
+  const [comments, setComments] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const [commentingDoc, setCommentingDoc] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', category: '' });
+  const [newComment, setNewComment] = useState('');
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load documents from localStorage based on current user ID
   useEffect(() => {
@@ -105,11 +114,9 @@ const Documents = () => {
       
       saveDocuments();
     }
-  }, [documents, user]);
+  }, [documents, user, comments]);
 
   // Load comments from localStorage based on user ID
-  const [comments, setComments] = useState({});
-  
   useEffect(() => {
     if (user) {
       const userCommentsKey = `app_comments_user_${user.id}`;
@@ -134,15 +141,6 @@ const Documents = () => {
       localStorage.setItem(userCommentsKey, JSON.stringify(comments));
     }
   }, [comments, user]);
-
-  const [isUploading, setIsUploading] = useState(false);
-  const [editingDoc, setEditingDoc] = useState(null);
-  const [viewingDoc, setViewingDoc] = useState(null);
-  const [commentingDoc, setCommentingDoc] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', category: '' });
-  const [newComment, setNewComment] = useState('');
-  const { toast } = useToast();
-  const { user } = useAuth();
 
   const filteredDocuments = documents.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
