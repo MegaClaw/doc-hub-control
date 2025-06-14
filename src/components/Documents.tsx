@@ -1,12 +1,13 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Upload, Search, Download, Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { FileText, Upload, Search, Download, Edit, Trash2, Eye, Plus, MessageSquare, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,11 +17,23 @@ const Documents = () => {
     { id: 3, name: 'Project Proposal.pdf', category: 'Projects', uploadDate: '2024-01-13', size: '1.2 MB', uploader: 'Mike Johnson' },
     { id: 4, name: 'Legal Contract.pdf', category: 'Legal', uploadDate: '2024-01-12', size: '945 KB', uploader: 'Sarah Wilson' },
   ]);
+  const [comments, setComments] = useState({
+    1: [
+      { id: 1, user: 'John Carder', comment: 'Thanks for sharing this.', date: '2024-01-16', time: '10:30 AM' },
+      { id: 2, user: 'Jane Smith', comment: 'Great work on the annual report!', date: '2024-01-16', time: '2:15 PM' }
+    ],
+    2: [
+      { id: 3, user: 'Mike Johnson', comment: 'Updated policy looks comprehensive.', date: '2024-01-15', time: '9:45 AM' }
+    ]
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [commentingDoc, setCommentingDoc] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', category: '' });
+  const [newComment, setNewComment] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const filteredDocuments = documents.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,7 +46,6 @@ const Documents = () => {
 
     setIsUploading(true);
     
-    // Simulate file upload
     setTimeout(() => {
       const newDocument = {
         id: Date.now(),
@@ -97,6 +109,45 @@ const Documents = () => {
 
   const handleDocumentClick = (doc) => {
     handleView(doc);
+  };
+
+  const handleComment = (doc) => {
+    setCommentingDoc(doc);
+    setNewComment('');
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+
+    const comment = {
+      id: Date.now(),
+      user: user?.name || 'Current User',
+      comment: newComment.trim(),
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setComments(prev => ({
+      ...prev,
+      [commentingDoc.id]: [...(prev[commentingDoc.id] || []), comment]
+    }));
+
+    setNewComment('');
+    toast({
+      title: "Comment added",
+      description: "Your comment has been added successfully",
+    });
+  };
+
+  const handleDeleteComment = (docId, commentId) => {
+    setComments(prev => ({
+      ...prev,
+      [docId]: prev[docId]?.filter(comment => comment.id !== commentId) || []
+    }));
+    toast({
+      title: "Comment deleted",
+      description: "Comment has been removed",
+    });
   };
 
   return (
@@ -171,6 +222,9 @@ const Documents = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500">{doc.uploadDate}</span>
+                  <Button variant="ghost" size="sm" onClick={() => handleComment(doc)}>
+                    <MessageSquare className="w-4 h-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleDownload(doc)}>
                     <Download className="w-4 h-4" />
                   </Button>
@@ -189,6 +243,78 @@ const Documents = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Comments Dialog */}
+      <Dialog open={!!commentingDoc} onOpenChange={() => setCommentingDoc(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <FileText className="w-5 h-5" />
+              <span>{commentingDoc?.name}'s Comments</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-b pb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Category:</strong> {commentingDoc?.category}</div>
+                <div><strong>Size:</strong> {commentingDoc?.size}</div>
+                <div><strong>Upload Date:</strong> {commentingDoc?.uploadDate}</div>
+                <div><strong>Uploader:</strong> {commentingDoc?.uploader}</div>
+              </div>
+            </div>
+            
+            {/* Add Comment Section */}
+            <div className="space-y-3">
+              <Label htmlFor="newComment" className="text-sm font-medium">Add Comment</Label>
+              <Textarea
+                id="newComment"
+                placeholder="Thanks for sharing this..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <div className="flex space-x-2">
+                <Button onClick={handleAddComment} className="bg-green-600 hover:bg-green-700">
+                  Add Comment
+                </Button>
+                <Button variant="outline" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setCommentingDoc(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+
+            {/* Comments List */}
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              <h4 className="font-medium text-gray-900">Comments ({comments[commentingDoc?.id]?.length || 0})</h4>
+              {comments[commentingDoc?.id]?.length > 0 ? (
+                comments[commentingDoc.id].map((comment) => (
+                  <div key={comment.id} className="border rounded-lg p-3 bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-sm">{comment.user}</span>
+                        <span className="text-xs text-gray-500">{comment.date} at {comment.time}</span>
+                      </div>
+                      {(user?.name === comment.user || user?.role === 'Admin') && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 p-1 h-auto"
+                          onClick={() => handleDeleteComment(commentingDoc.id, comment.id)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-700">{comment.comment}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* View Document Dialog */}
       <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
