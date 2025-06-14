@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { FolderOpen, Plus, Edit, Trash2, FileText, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +18,8 @@ const Categories = () => {
     { id: 6, name: 'Operations', description: 'Operational procedures and manuals', documentCount: 12, color: 'bg-indigo-500' },
   ]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryDetails, setShowCategoryDetails] = useState(false);
@@ -61,22 +63,49 @@ const Categories = () => {
     });
   };
 
-  const handleViewAll = (category) => {
-    setSelectedCategory(category);
-    setShowCategoryDetails(true);
+  const handleEditCategory = (category) => {
+    setEditingCategory(category);
+    setEditForm({ name: category.name, description: category.description });
+  };
+
+  const handleSaveEdit = () => {
+    setCategories(categories.map(cat => 
+      cat.id === editingCategory.id 
+        ? { ...cat, name: editForm.name, description: editForm.description }
+        : cat
+    ));
+    setEditingCategory(null);
     toast({
-      title: "Category Details",
-      description: `Viewing all documents in ${category.name}`,
+      title: "Category updated",
+      description: "Category has been updated successfully",
     });
   };
 
+  const handleViewAll = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryDetails(true);
+  };
+
+  // Sample documents for category details view
+  const getSampleDocuments = (categoryName) => {
+    const sampleDocs = [
+      { id: 1, name: `${categoryName} Report 2024.pdf`, uploadDate: '2024-01-15', size: '2.4 MB' },
+      { id: 2, name: `${categoryName} Guidelines.docx`, uploadDate: '2024-01-14', size: '856 KB' },
+      { id: 3, name: `${categoryName} Analysis.pdf`, uploadDate: '2024-01-13', size: '1.2 MB' },
+    ];
+    return sampleDocs.slice(0, Math.min(3, selectedCategory?.documentCount || 0));
+  };
+
   if (showCategoryDetails && selectedCategory) {
+    const categoryDocuments = getSampleDocuments(selectedCategory.name);
+    
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button variant="outline" onClick={() => setShowCategoryDetails(false)}>
-              ← Back to Categories
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Categories
             </Button>
             <h1 className="text-3xl font-bold text-gray-900">{selectedCategory.name} Documents</h1>
           </div>
@@ -84,14 +113,54 @@ const Categories = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Documents in {selectedCategory.name} ({selectedCategory.documentCount})</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <div className={`p-2 rounded-lg ${selectedCategory.color}`}>
+                <FolderOpen className="w-5 h-5 text-white" />
+              </div>
+              <span>Documents in {selectedCategory.name} ({selectedCategory.documentCount})</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">This category contains {selectedCategory.documentCount} documents</p>
-              <p className="text-sm text-gray-500 mt-2">{selectedCategory.description}</p>
-            </div>
+            <p className="text-gray-600 mb-6">{selectedCategory.description}</p>
+            
+            {categoryDocuments.length > 0 ? (
+              <div className="space-y-3">
+                {categoryDocuments.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <h4 className="font-medium">{doc.name}</h4>
+                        <p className="text-sm text-gray-500">{doc.size} • {doc.uploadDate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {selectedCategory.documentCount > 3 && (
+                  <div className="text-center py-4 text-gray-500">
+                    And {selectedCategory.documentCount - 3} more documents...
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No documents found in this category</p>
+                <Button className="mt-4" variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload Document
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -150,7 +219,7 @@ const Categories = () => {
                   <FolderOpen className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button 
@@ -184,6 +253,37 @@ const Categories = () => {
           </Card>
         ))}
       </div>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editName">Category Name</Label>
+              <Input
+                id="editName"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDescription">Description</Label>
+              <Input
+                id="editDescription"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingCategory(null)}>Cancel</Button>
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

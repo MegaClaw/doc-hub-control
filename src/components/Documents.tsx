@@ -17,6 +17,9 @@ const Documents = () => {
     { id: 4, name: 'Legal Contract.pdf', category: 'Legal', uploadDate: '2024-01-12', size: '945 KB', uploader: 'Sarah Wilson' },
   ]);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', category: '' });
   const { toast } = useToast();
 
   const filteredDocuments = documents.filter(doc =>
@@ -64,6 +67,36 @@ const Documents = () => {
       title: "Document deleted",
       description: "Document has been removed successfully",
     });
+  };
+
+  const handleView = (doc) => {
+    setViewingDoc(doc);
+    toast({
+      title: "Opening document",
+      description: `Viewing ${doc.name}`,
+    });
+  };
+
+  const handleEdit = (doc) => {
+    setEditingDoc(doc);
+    setEditForm({ name: doc.name, category: doc.category });
+  };
+
+  const handleSaveEdit = () => {
+    setDocuments(documents.map(doc => 
+      doc.id === editingDoc.id 
+        ? { ...doc, name: editForm.name, category: editForm.category }
+        : doc
+    ));
+    setEditingDoc(null);
+    toast({
+      title: "Document updated",
+      description: "Document has been updated successfully",
+    });
+  };
+
+  const handleDocumentClick = (doc) => {
+    handleView(doc);
   };
 
   return (
@@ -127,7 +160,7 @@ const Documents = () => {
           <div className="space-y-2">
             {filteredDocuments.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 cursor-pointer" onClick={() => handleDocumentClick(doc)}>
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <FileText className="w-5 h-5 text-blue-600" />
                   </div>
@@ -141,10 +174,10 @@ const Documents = () => {
                   <Button variant="ghost" size="sm" onClick={() => handleDownload(doc)}>
                     <Download className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleView(doc)}>
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(doc.id)}>
@@ -156,6 +189,61 @@ const Documents = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Document Dialog */}
+      <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Viewing: {viewingDoc?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><strong>Category:</strong> {viewingDoc?.category}</div>
+              <div><strong>Size:</strong> {viewingDoc?.size}</div>
+              <div><strong>Upload Date:</strong> {viewingDoc?.uploadDate}</div>
+              <div><strong>Uploader:</strong> {viewingDoc?.uploader}</div>
+            </div>
+            <div className="bg-gray-100 p-8 rounded-lg text-center min-h-[400px] flex items-center justify-center">
+              <div>
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Document preview would appear here</p>
+                <p className="text-sm text-gray-500 mt-2">In a real application, this would show the document content</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Document Dialog */}
+      <Dialog open={!!editingDoc} onOpenChange={() => setEditingDoc(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editName">Document Name</Label>
+              <Input
+                id="editName"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editCategory">Category</Label>
+              <Input
+                id="editCategory"
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingDoc(null)}>Cancel</Button>
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -18,7 +18,10 @@ const Users = () => {
     { id: 5, name: 'Tom Brown', email: 'tom@company.com', role: 'Viewer', status: 'Active', lastLogin: '2024-01-12' },
   ]);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'User' });
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [managingPermissions, setManagingPermissions] = useState(null);
   const { toast } = useToast();
 
   const filteredUsers = users.filter(user =>
@@ -81,6 +84,45 @@ const Users = () => {
     toast({
       title: "User status updated",
       description: "User status has been changed",
+    });
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setEditForm({ name: user.name, email: user.email, role: user.role });
+  };
+
+  const handleSaveEdit = () => {
+    setUsers(users.map(user => 
+      user.id === editingUser.id 
+        ? { ...user, name: editForm.name, email: editForm.email, role: editForm.role }
+        : user
+    ));
+    setEditingUser(null);
+    toast({
+      title: "User updated",
+      description: "User has been updated successfully",
+    });
+  };
+
+  const handleManagePermissions = (user) => {
+    setManagingPermissions(user);
+    toast({
+      title: "Permission Management",
+      description: `Managing permissions for ${user.name}`,
+    });
+  };
+
+  const updateUserRole = (newRole) => {
+    setUsers(users.map(user => 
+      user.id === managingPermissions.id 
+        ? { ...user, role: newRole }
+        : user
+    ));
+    setManagingPermissions(null);
+    toast({
+      title: "Role updated",
+      description: `User role has been changed to ${newRole}`,
     });
   };
 
@@ -189,10 +231,10 @@ const Users = () => {
                     Last: {user.lastLogin}
                   </span>
                   <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleManagePermissions(user)}>
                       <Shield className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button 
@@ -210,6 +252,91 @@ const Users = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editName">Full Name</Label>
+              <Input
+                id="editName"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editEmail">Email</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editRole">Role</Label>
+              <select
+                id="editRole"
+                value={editForm.role}
+                onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Viewer">Viewer</option>
+                <option value="User">User</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingUser(null)}>Cancel</Button>
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Permissions Dialog */}
+      <Dialog open={!!managingPermissions} onOpenChange={() => setManagingPermissions(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Permissions - {managingPermissions?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Current Role: <span className="font-medium">{managingPermissions?.role}</span>
+            </p>
+            <div className="space-y-2">
+              <Label>Change Role:</Label>
+              <div className="grid grid-cols-1 gap-2">
+                <Button 
+                  variant={managingPermissions?.role === 'Viewer' ? 'default' : 'outline'}
+                  onClick={() => updateUserRole('Viewer')}
+                  className="justify-start"
+                >
+                  Viewer - Can only view documents
+                </Button>
+                <Button 
+                  variant={managingPermissions?.role === 'User' ? 'default' : 'outline'}
+                  onClick={() => updateUserRole('User')}
+                  className="justify-start"
+                >
+                  User - Can view and upload documents
+                </Button>
+                <Button 
+                  variant={managingPermissions?.role === 'Admin' ? 'default' : 'outline'}
+                  onClick={() => updateUserRole('Admin')}
+                  className="justify-start"
+                >
+                  Admin - Full access to all features
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
