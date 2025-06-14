@@ -82,7 +82,7 @@ const Documents = () => {
 
     setIsUploading(true);
     
-    // Create a URL for the file so we can view it later
+    // Create a proper blob URL for PDF viewing
     const fileUrl = URL.createObjectURL(file);
     
     setTimeout(() => {
@@ -102,7 +102,7 @@ const Documents = () => {
       
       toast({
         title: "File uploaded successfully",
-        description: `${file.name} has been uploaded`,
+        description: `${file.name} has been uploaded and is ready for viewing`,
       });
     }, 2000);
   };
@@ -232,20 +232,26 @@ const Documents = () => {
     }
 
     const fileType = doc.file.type;
+    console.log('Rendering file preview for:', doc.name, 'Type:', fileType, 'URL:', doc.fileUrl);
     
     if (fileType === 'application/pdf') {
       return (
-        <div className="w-full h-[600px] border rounded-lg overflow-hidden">
+        <div className="w-full min-h-[600px] border rounded-lg overflow-hidden bg-white">
+          <div className="p-4 bg-gray-50 border-b">
+            <h3 className="font-medium text-gray-900">PDF Preview: {doc.name}</h3>
+            <p className="text-sm text-gray-600">Use browser controls to zoom and navigate</p>
+          </div>
           <iframe
-            src={doc.fileUrl}
-            className="w-full h-full"
+            src={`${doc.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+            className="w-full h-[600px] border-0"
             title={`Preview of ${doc.name}`}
+            style={{ minHeight: '600px' }}
           />
         </div>
       );
     } else if (fileType.startsWith('image/')) {
       return (
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[400px] bg-gray-50 rounded-lg p-4">
           <img
             src={doc.fileUrl}
             alt={doc.name}
@@ -453,7 +459,7 @@ const Documents = () => {
 
       {/* View Document Dialog */}
       <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Viewing: {viewingDoc?.name}</span>
@@ -465,7 +471,7 @@ const Documents = () => {
               )}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 rounded-lg">
               <div><strong>Category:</strong> {viewingDoc?.category}</div>
               <div><strong>Size:</strong> {viewingDoc?.size}</div>
