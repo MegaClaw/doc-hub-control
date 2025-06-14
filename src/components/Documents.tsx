@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,75 @@ const Documents = () => {
       fileUrl: null as string | null
     },
   ]);
+
+  // Load documents from localStorage on component mount
+  useEffect(() => {
+    const savedDocuments = localStorage.getItem('documents');
+    if (savedDocuments) {
+      try {
+        const parsedDocs = JSON.parse(savedDocuments);
+        // Recreate blob URLs for uploaded files
+        const docsWithUrls = parsedDocs.map(doc => {
+          if (doc.fileData) {
+            // Convert base64 back to blob and create URL
+            const byteString = atob(doc.fileData.split(',')[1]);
+            const mimeString = doc.fileData.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+            const file = new File([blob], doc.name, { type: mimeString });
+            return {
+              ...doc,
+              file: file,
+              fileUrl: URL.createObjectURL(blob),
+              fileData: undefined // Remove base64 data after conversion
+            };
+          }
+          return doc;
+        });
+        setDocuments(docsWithUrls);
+      } catch (error) {
+        console.error('Error loading documents from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save documents to localStorage whenever documents change
+  useEffect(() => {
+    const saveDocuments = async () => {
+      const docsToSave = await Promise.all(
+        documents.map(async (doc) => {
+          if (doc.file && !doc.fileData) {
+            // Convert file to base64 for storage
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                resolve({
+                  ...doc,
+                  file: null,
+                  fileUrl: null,
+                  fileData: reader.result
+                });
+              };
+              reader.readAsDataURL(doc.file);
+            });
+          }
+          return {
+            ...doc,
+            file: null,
+            fileUrl: null
+          };
+        })
+      );
+      localStorage.setItem('documents', JSON.stringify(docsToSave));
+    };
+    
+    saveDocuments();
+  }, [documents]);
+
   const [comments, setComments] = useState({
     1: [
       { id: 1, user: 'John Carder', comment: 'Thanks for sharing this.', date: '2024-01-16', time: '10:30 AM' },
@@ -260,17 +329,13 @@ const Documents = () => {
             </div>
           </div>
           
-          <div className="w-full border rounded-lg overflow-hidden bg-white" style={{ height: '600px' }}>
-            <iframe
+          <div className="w-full border rounded-lg overflow-hidden bg-white">
+            <embed
               src={doc.fileUrl}
-              className="w-full h-full border-0"
-              title={`Preview of ${doc.name}`}
-              style={{ 
-                minHeight: '600px',
-                width: '100%',
-                border: 'none'
-              }}
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+              type="application/pdf"
+              width="100%"
+              height="600px"
+              className="border-0"
             />
           </div>
           
