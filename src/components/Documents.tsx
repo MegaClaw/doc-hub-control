@@ -19,130 +19,122 @@ interface DocumentType {
   file: File | null;
   fileUrl: string | null;
   fileData?: string;
+  userId: number; // Add userId to link documents to users
 }
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [documents, setDocuments] = useState<DocumentType[]>([
-    { 
-      id: 1, 
-      name: 'Annual Report 2024.pdf', 
-      category: 'Finance', 
-      uploadDate: '2024-01-15', 
-      size: '2.4 MB', 
-      uploader: 'John Doe',
-      file: null,
-      fileUrl: null
-    },
-    { 
-      id: 2, 
-      name: 'HR Policy Update.docx', 
-      category: 'HR', 
-      uploadDate: '2024-01-14', 
-      size: '856 KB', 
-      uploader: 'Jane Smith',
-      file: null,
-      fileUrl: null
-    },
-    { 
-      id: 3, 
-      name: 'Project Proposal.pdf', 
-      category: 'Projects', 
-      uploadDate: '2024-01-13', 
-      size: '1.2 MB', 
-      uploader: 'Mike Johnson',
-      file: null,
-      fileUrl: null
-    },
-    { 
-      id: 4, 
-      name: 'Legal Contract.pdf', 
-      category: 'Legal', 
-      uploadDate: '2024-01-12', 
-      size: '945 KB', 
-      uploader: 'Sarah Wilson',
-      file: null,
-      fileUrl: null
-    },
-  ]);
+  const [documents, setDocuments] = useState<DocumentType[]>([]);
 
-  // Load documents from localStorage on component mount
+  // Load documents from localStorage based on current user ID
   useEffect(() => {
-    const savedDocuments = localStorage.getItem('app_documents');
-    if (savedDocuments) {
-      try {
-        const parsedDocs: DocumentType[] = JSON.parse(savedDocuments);
-        // Recreate blob URLs for uploaded files
-        const docsWithUrls = parsedDocs.map(doc => {
-          if (doc.fileData) {
-            // Convert base64 back to blob and create URL
-            const byteString = atob(doc.fileData.split(',')[1]);
-            const mimeString = doc.fileData.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
+    if (user) {
+      const userDocumentsKey = `app_documents_user_${user.id}`;
+      const savedDocuments = localStorage.getItem(userDocumentsKey);
+      if (savedDocuments) {
+        try {
+          const parsedDocs: DocumentType[] = JSON.parse(savedDocuments);
+          // Recreate blob URLs for uploaded files
+          const docsWithUrls = parsedDocs.map(doc => {
+            if (doc.fileData) {
+              // Convert base64 back to blob and create URL
+              const byteString = atob(doc.fileData.split(',')[1]);
+              const mimeString = doc.fileData.split(',')[0].split(':')[1].split(';')[0];
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              const blob = new Blob([ab], { type: mimeString });
+              const file = new File([blob], doc.name, { type: mimeString });
+              return {
+                ...doc,
+                file: file,
+                fileUrl: URL.createObjectURL(blob),
+                fileData: undefined
+              };
             }
-            const blob = new Blob([ab], { type: mimeString });
-            const file = new File([blob], doc.name, { type: mimeString });
-            return {
-              ...doc,
-              file: file,
-              fileUrl: URL.createObjectURL(blob),
-              fileData: undefined
-            };
-          }
-          return doc;
-        });
-        setDocuments(docsWithUrls);
-      } catch (error) {
-        console.error('Error loading documents from localStorage:', error);
+            return doc;
+          });
+          setDocuments(docsWithUrls);
+        } catch (error) {
+          console.error('Error loading user documents from localStorage:', error);
+        }
+      } else {
+        // If no user-specific documents exist, initialize with empty array
+        setDocuments([]);
       }
     }
-  }, []);
+  }, [user]);
 
-  // Save documents to localStorage whenever documents change
+  // Save documents to localStorage with user-specific key whenever documents change
   useEffect(() => {
-    const saveDocuments = async () => {
-      const docsToSave = await Promise.all(
-        documents.map(async (doc) => {
-          if (doc.file && !doc.fileData) {
-            // Convert file to base64 for storage
-            return new Promise<DocumentType>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                resolve({
-                  ...doc,
-                  file: null,
-                  fileUrl: null,
-                  fileData: reader.result as string
-                });
-              };
-              reader.readAsDataURL(doc.file);
-            });
-          }
-          return {
-            ...doc,
-            file: null,
-            fileUrl: null
-          };
-        })
-      );
-      localStorage.setItem('app_documents', JSON.stringify(docsToSave));
-    };
-    
-    saveDocuments();
-  }, [documents]);
+    if (user && documents.length >= 0) { // Include empty array case
+      const saveDocuments = async () => {
+        const docsToSave = await Promise.all(
+          documents.map(async (doc) => {
+            if (doc.file && !doc.fileData) {
+              // Convert file to base64 for storage
+              return new Promise<DocumentType>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  resolve({
+                    ...doc,
+                    file: null,
+                    fileUrl: null,
+                    fileData: reader.result as string
+                  });
+                };
+                reader.readAsDataURL(doc.file);
+              });
+            }
+            return {
+              ...doc,
+              file: null,
+              fileUrl: null
+            };
+          })
+        );
+        const userDocumentsKey = `app_documents_user_${user.id}`;
+        localStorage.setItem(userDocumentsKey, JSON.stringify(docsToSave));
+        
+        // Also save to global comments with user-specific key
+        const userCommentsKey = `app_comments_user_${user.id}`;
+        localStorage.setItem(userCommentsKey, JSON.stringify(comments));
+      };
+      
+      saveDocuments();
+    }
+  }, [documents, user]);
 
-  const [comments, setComments] = useState({
-    1: [
-      { id: 1, user: 'John Carder', comment: 'Thanks for sharing this.', date: '2024-01-16', time: '10:30 AM' },
-      { id: 2, user: 'Jane Smith', comment: 'Great work on the annual report!', date: '2024-01-16', time: '2:15 PM' }
-    ],
-    2: [
-      { id: 3, user: 'Mike Johnson', comment: 'Updated policy looks comprehensive.', date: '2024-01-15', time: '9:45 AM' }
-    ]
-  });
+  // Load comments from localStorage based on user ID
+  const [comments, setComments] = useState({});
+  
+  useEffect(() => {
+    if (user) {
+      const userCommentsKey = `app_comments_user_${user.id}`;
+      const savedComments = localStorage.getItem(userCommentsKey);
+      if (savedComments) {
+        try {
+          setComments(JSON.parse(savedComments));
+        } catch (error) {
+          console.error('Error loading user comments from localStorage:', error);
+          setComments({});
+        }
+      } else {
+        setComments({});
+      }
+    }
+  }, [user]);
+
+  // Save comments to localStorage whenever comments change
+  useEffect(() => {
+    if (user) {
+      const userCommentsKey = `app_comments_user_${user.id}`;
+      localStorage.setItem(userCommentsKey, JSON.stringify(comments));
+    }
+  }, [comments, user]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
@@ -159,7 +151,7 @@ const Documents = () => {
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     setIsUploading(true);
     
@@ -173,9 +165,10 @@ const Documents = () => {
         category: 'General',
         uploadDate: new Date().toISOString().split('T')[0],
         size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        uploader: user?.name || 'Current User',
+        uploader: user.name,
         file: file,
-        fileUrl: fileUrl
+        fileUrl: fileUrl,
+        userId: user.id // Link document to current user
       };
       
       setDocuments([newDocument, ...documents]);
@@ -398,10 +391,22 @@ const Documents = () => {
     }
   };
 
+  // Show loading or login message if user is not available
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">Please log in to view your documents</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
+        <h1 className="text-3xl font-bold text-gray-900">My Documents</h1>
         <Dialog>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -453,44 +458,52 @@ const Documents = () => {
       {/* Documents List */}
       <Card>
         <CardHeader>
-          <CardTitle>Documents ({filteredDocuments.length})</CardTitle>
+          <CardTitle>My Documents ({filteredDocuments.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {filteredDocuments.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-4 cursor-pointer" onClick={() => handleDocumentClick(doc)}>
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FileText className="w-5 h-5 text-blue-600" />
+          {filteredDocuments.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg mb-2">No documents found</p>
+              <p className="text-gray-500">Upload your first document to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredDocuments.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center space-x-4 cursor-pointer" onClick={() => handleDocumentClick(doc)}>
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{doc.name}</h3>
+                      <p className="text-sm text-gray-500">{doc.category} • {doc.size} • Uploaded by {doc.uploader}</p>
+                      {doc.file && <p className="text-xs text-green-600">✓ File available for preview</p>}
+                      {!doc.file && <p className="text-xs text-orange-600">⚠ File not available for preview</p>}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{doc.name}</h3>
-                    <p className="text-sm text-gray-500">{doc.category} • {doc.size} • Uploaded by {doc.uploader}</p>
-                    {doc.file && <p className="text-xs text-green-600">✓ File available for preview</p>}
-                    {!doc.file && <p className="text-xs text-orange-600">⚠ File not available for preview</p>}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">{doc.uploadDate}</span>
+                    <Button variant="ghost" size="sm" onClick={() => handleComment(doc)}>
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDownload(doc)}>
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleView(doc)}>
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(doc.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{doc.uploadDate}</span>
-                  <Button variant="ghost" size="sm" onClick={() => handleComment(doc)}>
-                    <MessageSquare className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDownload(doc)}>
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleView(doc)}>
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(doc.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
