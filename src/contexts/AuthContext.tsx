@@ -1,5 +1,5 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
 interface User {
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
         return { 
           success: false, 
-          error: 'Cannot connect to server. Make sure the backend is running on http://localhost:5000' 
+          error: 'Cannot connect to server. Make sure the backend is running on http://localhost:3001' 
         };
       }
       
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
         return { 
           success: false, 
-          error: 'Cannot connect to server. Make sure the backend is running on http://localhost:5000' 
+          error: 'Cannot connect to server. Make sure the backend is running on http://localhost:3001' 
         };
       }
       
@@ -135,3 +135,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
