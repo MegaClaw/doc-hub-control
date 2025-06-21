@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3001;
 
 // Middleware
 app.use(cors());
@@ -11,6 +11,26 @@ app.use(express.json());
 // Test route
 app.get('/', (req, res) => {
     res.json({ message: 'Server is working!', timestamp: new Date() });
+});
+
+// Database connection test route
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const db = require('./config/database');
+    const [rows] = await db.execute('SELECT 1 as test, NOW() as current_time');
+    res.json({ 
+      success: true, 
+      message: 'Database connected successfully',
+      data: rows,
+      host: process.env.DB_HOST 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Database connection failed',
+      error: error.message 
+    });
+  }
 });
 
 // Test auth route
@@ -25,9 +45,14 @@ app.post('/api/auth/login', (req, res) => {
     }
 });
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Test it at: http://localhost:${PORT}`);
+// Routes (will be added when you create the route files)
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/documents', require('./routes/documents'));
+app.use('/api/comments', require('./routes/comments'));
+
+const server = app.listen(process.env.PORT || 3001, () => {
+    console.log(`Server running on port ${process.env.PORT || 3001}`);
+    console.log(`Test it at: http://localhost:${process.env.PORT || 3001}`);
     console.log('Server is now running and waiting for requests...');
 });
 
