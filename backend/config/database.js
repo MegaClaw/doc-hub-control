@@ -1,9 +1,10 @@
-
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+// Create connection pool for better performance
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -13,28 +14,19 @@ const pool = mysql.createPool({
   queueLimit: 0,
   acquireTimeout: 60000,
   timeout: 60000,
-  reconnect: true
 });
 
 // Test the connection
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('❌ Database connection failed:', err.message);
-    console.error('Host:', process.env.DB_HOST);
-    console.error('User:', process.env.DB_USER);
-    console.error('Database:', process.env.DB_NAME);
-  } else {
-    console.log('✅ Database connected successfully to:', process.env.DB_HOST);
+async function testConnection() {
+  try {
+    const connection = await pool.getConnection();
+    console.log('✅ Database connected successfully');
     connection.release();
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    return false;
   }
-});
+}
 
-// Handle connection errors
-pool.on('error', (err) => {
-  console.error('Database pool error:', err);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.log('Reconnecting to database...');
-  }
-});
-
-module.exports = pool.promise();
+module.exports = pool;
