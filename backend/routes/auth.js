@@ -19,8 +19,18 @@ router.post('/login', async (req, res) => {
     }
     
     const user = users[0];
+    let isValid = false;
+    const inputPassword = password; // Password from request body
+
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$')) {
+      // Password is hashed, use bcrypt
+      isValid = await bcrypt.compare(inputPassword, user.password);
+    } else {
+      // Password is plain text (for old accounts)
+      isValid = user.password === inputPassword;
+    }
     // const isValid = await bcrypt.compare(password, user.password);
-    const isValid = user.password === password;
+    //const isValid = user.password === password;
     
     if (!isValid) {
       return res.json({ success: false, error: 'Invalid credentials' });
